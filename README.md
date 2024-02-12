@@ -1,6 +1,7 @@
 # BGE-M3 in HuggingFace Transformer
 
-> **WARNING**: This is not an official implementation of BGE-M3. Official implementation can be found in [Flag Embedding](https://github.com/FlagOpen/FlagEmbedding) project.
+> [!Warning]
+> This is not an official implementation of BGE-M3. Official implementation can be found in [Flag Embedding](https://github.com/FlagOpen/FlagEmbedding) project.
 
 ## Introduction
 
@@ -10,9 +11,11 @@ Currently, dense embedding is supported in HuggingFace Transformer. Multi-vector
 
 In this repository, i use a custom model to integrate full functionality of BGE-M3 in HuggingFace Transformer.
 
-## Usage
+## Convert Model
 
-1. Convert BGE-M3 model to our implementation
+1. A converted model has been upload to [HuggingFace](https://huggingface.co/liuyanyi/bge-m3-hf)
+
+2. If you have an offical weight, you can convert it ot our implementation
 
 ```bash
 python convert_to_hf_bge_m3.py <path_to_bge_m3_model> <output_dir> --export_st
@@ -20,7 +23,7 @@ python convert_to_hf_bge_m3.py <path_to_bge_m3_model> <output_dir> --export_st
 
 this will convert the BGE-M3 model to our format and save it to the output directory. The `--export_st` flag is used to export the sentence transformer model.
 
-2. Use BGE-M3 in HuggingFace Transformer
+## Use BGE-M3 in HuggingFace Transformer
 
 ```python
 from transformers import AutoModel, AutoTokenizer

@@ -42,6 +42,7 @@ class BgeM3Model(XLMRobertaPreTrainedModel):
 
         self.init_weights()
 
+    # Copied from FlagEmbedding
     def dense_embedding(self, hidden_state, mask):
         if self.sentence_pooling_method == "cls":
             return hidden_state[:, 0]
@@ -50,6 +51,7 @@ class BgeM3Model(XLMRobertaPreTrainedModel):
             d = mask.sum(axis=1, keepdim=True).float()
             return s / d
 
+    # Copied from FlagEmbedding
     def sparse_embedding(self, hidden_state, input_ids, return_embedding: bool = False):
         token_weights = torch.relu(self.sparse_linear(hidden_state))
         if not return_embedding:
@@ -69,11 +71,13 @@ class BgeM3Model(XLMRobertaPreTrainedModel):
         sparse_embedding[:, unused_tokens] *= 0.0
         return sparse_embedding
 
+    # Copied from FlagEmbedding
     def colbert_embedding(self, last_hidden_state, mask):
         colbert_vecs = self.colbert_linear(last_hidden_state[:, 1:])
         colbert_vecs = colbert_vecs * mask[:, 1:][:, :, None].float()
         return colbert_vecs
 
+    # Modified from FlagEmbedding
     def _process_token_weights(self, token_weights, input_ids, mask):
         token_weights = token_weights.squeeze(-1)
         # conver to dict
@@ -81,50 +85,32 @@ class BgeM3Model(XLMRobertaPreTrainedModel):
         unused_tokens = self.config.unused_tokens
         unused_tokens = torch.tensor(unused_tokens, device=input_ids.device)
 
-        # 获取有效的 token 的索引
+        # Get valid matrix
         valid_indices = ~torch.isin(input_ids, unused_tokens)
-        # weight必须大于0
+        # w>0
         valid_indices = (valid_indices & (token_weights > 0)).bool()
-        # 结合 attention mask，获取有效的 token 的索引
         valid_indices = (valid_indices & mask).bool()
 
         for i, valid in enumerate(valid_indices):
             result = defaultdict(int)
 
-            # 获取有效的 weights 和 ids
+            # Get valid weight and ids
             valid_weights = token_weights[i][valid]
             valid_ids = input_ids[i][valid]
 
-            # 获取每个 id 的最大权重
+            # Get unique token
             unique_ids, inverse_indices = torch.unique(valid_ids, return_inverse=True)
 
-            # 使用一个循环来找到每个 unique id 的最大权重
+            # Get max weight for each token
             for i in range(unique_ids.shape[0]):
                 id_mask = inverse_indices == i
                 result[str(unique_ids[i].item())] = valid_weights[id_mask].max().item()
 
             all_result.append(result)
-        # token_weights = np.ceil(token_weights * 100)
-        # for w, idx, num in zip(token_weights, input_ids, tokens_num):
-        #     r = defaultdict(int)
-        #     token_weight = w[:num]
-        #     idx = idx[:num]
 
-        #     for t_w, t_idx in zip(token_weight, idx):
-        #         if t_idx.item() not in unused_tokens:
-        #             t_idx = str(t_idx.item())
-        #             if t_w > r[t_idx]:
-        #                 r[t_idx] = t_w.item()
-
-        #     result.append(r)
-
-        # if idx not in unused_tokens and w > 0:
-        #     idx = str(idx)
-        #     # w = int(w)
-        #     if w > result[idx]:
-        #         result[idx] = w
         return all_result
 
+    # Copied from FlagEmbedding
     def _process_colbert_vecs(self, colbert_vecs, tokens_num) -> List[torch.Tensor]:
         # delte the vectors of padding tokens
         vecs = []
